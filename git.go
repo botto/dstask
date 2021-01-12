@@ -1,6 +1,7 @@
 package dstask
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -18,6 +19,21 @@ func MustRunGitCmd(repoPath string, args ...string) {
 	if err != nil {
 		ExitFail("Failed to run git cmd.")
 	}
+}
+
+// GitCommit stages changes in the dstask repository and commits them.
+func GitCommit(repoPath, format string, a ...interface{}) error {
+	msg := fmt.Sprintf(format, a...)
+	if err := RunGitCmd(repoPath, "add", "."); err != nil {
+		return err
+	}
+
+	// check for changes -- returns exit status 1 on change
+	if RunGitCmd(repoPath, "diff-index", "--quiet", "HEAD", "--") == nil {
+		return errors.New("No changes detected")
+	}
+
+	return RunGitCmd(repoPath, "commit", "--no-gpg-sign", "-m", msg)
 }
 
 // MustGitCommit stages changes in the dstask repository and commits them. If
